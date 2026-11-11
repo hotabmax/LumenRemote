@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Фон и поверхности -->
+    <color name="bg_deep">#05060C</color>
+    <color name="bg">#0A0C16</color>
+    <color name="surface">#111527</color>
+    <color name="surface_2">#171C33</color>
+    <color name="surface_3">#1F2540</color>
+
+    <!-- Акценты -->
+    <color name="violet">#8B5CFF</color>
+    <color name="violet_deep">#5B2BE0</color>
+    <color name="blue">#3FA9FF</color>
+    <color name="cyan">#37E6C8</color>
+    <color name="magenta">#FF5CA8</color>
+
+    <!-- Текст -->
+    <color name="text_primary">#F3F5FF</color>
+    <color name="text_secondary">#A2ABCE</color>
+    <color name="text_tertiary">#6E779B</color>
+
+    <!-- Служебные -->
+    <color name="stroke">#1FFFFFFF</color>
+    <color name="stroke_strong">#33FFFFFF</color>
+    <color name="success">#3BE08D</color>
+    <color name="warning">#FFC24B</color>
+    <color name="danger">#FF5C74</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="scrim">#B305060C</color>
+    <color name="transparent">#00000000</color>
+
+    <color name="launcher_bg_start">#221048</color>
+    <color name="launcher_bg_end">#071B22</color>
+</resources>

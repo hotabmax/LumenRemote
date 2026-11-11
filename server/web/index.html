@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05060c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Lumen Remote — веб-клиент</title>
+  <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <rect x="2.9" y="4.4" width="18.2" height="12.8" rx="3.1"
+                fill="none" stroke="#ffffff" stroke-width="1.7"/>
+          <path d="M8.1 9.9a5.6 5.6 0 0 1 7.8 0" fill="none" stroke="#e4dbff"
+                stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M10.2 12.3a2.8 2.8 0 0 1 3.6 0" fill="none" stroke="#37e6c8"
+                stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="13.9" r="1.15" fill="#37e6c8"/>
+          <path d="M7.5 19.6h9" stroke="#b7a6ff" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="titles">
+        <h1>Lumen Remote</h1>
+        <p>Веб-клиент для iPhone, iPad и браузера</p>
+      </div>
+      <span id="statusChip" class="pill">офлайн</span>
+    </header>
+
+    <section id="connectPanel" class="card">
+      <h2>Подключение</h2>
+      <label class="field">
+        <span>Код устройства</span>
+        <input id="code" inputmode="numeric" autocomplete="off" maxlength="9"
+               placeholder="284 913 706">
+      </label>
+      <label class="field">
+        <span>PIN-код</span>
+        <input id="pin" inputmode="numeric" type="password" autocomplete="off"
+               maxlength="4" placeholder="••••">
+      </label>
+      <details class="advanced">
+        <summary>Relay-сервер</summary>
+        <label class="field">
+          <input id="url" autocomplete="off" placeholder="wss://ваш-сервер/ws">
+        </label>
+        <p class="hint">По умолчанию используется сервер, с которого открыта эта страница.</p>
+      </details>
+      <button id="connectBtn" class="primary" type="button">Подключиться</button>
+      <p id="error" class="error" hidden></p>
+      <p class="hint">
+        Откройте адрес в Safari на iPhone и войдите по коду и PIN принимающего
+        Android-устройства — экран появится прямо в браузере.
+      </p>
+    </section>
+
+    <section id="sessionPanel" class="session" hidden>
+      <div class="peerbar">
+        <div>
+          <strong id="peerName">Устройство</strong>
+          <p id="peerInfo">—</p>
+        </div>
+        <span id="qualityChip" class="pill">0 мс</span>
+      </div>
+
+      <div class="screenWrap">
+        <canvas id="screen"></canvas>
+        <div id="overlay" class="overlay">
+          <div class="spinner"></div>
+          <span id="overlayText">Устанавливаем соединение…</span>
+        </div>
+      </div>
+
+      <p id="iosNote" class="note" hidden></p>
+
+      <div class="toolbar">
+        <button class="tool" data-action="keyboard" type="button" title="Клавиатура">⌨</button>
+        <button class="tool gesture" data-action="back" type="button" title="Назад">←</button>
+        <button class="tool gesture" data-action="home" type="button" title="Домой">⌂</button>
+        <button class="tool gesture" data-action="recents" type="button" title="Недавние">▢</button>
+        <button class="tool" data-action="link" type="button" title="Открыть ссылку">🔗</button>
+        <button class="tool" data-action="clipboard" type="button" title="Буфер обмена">📋</button>
+        <button class="tool" data-action="shot" type="button" title="Снимок экрана">⤓</button>
+        <button class="tool danger" data-action="end" type="button" title="Завершить">✕</button>
+      </div>
+      <p id="sessionInfo" class="hint center">—</p>
+    </section>
+  </div>
+  <script src="app.js?v=2"></script>
+</body>
+</html>

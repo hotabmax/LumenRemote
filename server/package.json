@@ -1,0 +1,17 @@
+{
+  "name": "lumen-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Relay-сервер Lumen Remote: сопряжение по коду и пересылка кадров между устройствами",
+  "main": "relay.js",
+  "scripts": {
+    "start": "node relay.js",
+    "check": "node --check relay.js && node --check web/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

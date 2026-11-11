@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_deep">
+
+    <com.lumen.remote.ui.widget.RemoteScreenView
+        android:id="@+id/remoteView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="6dp"
+        android:contentDescription="@string/viewer_session_screen"
+        tools:src="@android:color/darker_gray" />
+
+    <SurfaceView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/touchDot"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_touch_dot"
+        android:visibility="gone" />
+
+    <!-- Верхняя панель -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="@drawable/bg_scrim_top"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp">
+
+        <ImageButton
+            android:id="@+id/btnMinimize"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/close"
+            android:padding="8dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvPeerName"
+                style="@style/TextAppearance.Lumen.Headline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Pixel 8 Pro" />
+
+            <TextView
+                android:id="@+id/tvPeerInfo"
+                style="@style/TextAppearance.Lumen.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Android · защищённое соединение" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvQuality"
+            style="@style/TextAppearance.Lumen.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill"
+            android:drawableStart="@drawable/ic_signal"
+            android:drawablePadding="6dp"
+            android:drawableTint="@color/cyan"
+            android:paddingStart="10dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="5dp"
+            android:textColor="@color/cyan"
+            tools:text="24 мс" />
+    </LinearLayout>
+
+    <!-- Статус соединения -->
+    <LinearLayout
+        android:id="@+id/statusPanel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_pill"
+        android:gravity="center_horizontal"
+        android:minWidth="240dp"
+        android:orientation="vertical"
+        android:paddingStart="26dp"
+        android:paddingTop="22dp"
+        android:paddingEnd="26dp"
+        android:paddingBottom="22dp">
+
+        <ProgressBar
+            android:id="@+id/pbConnect"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:indeterminateTint="@color/cyan" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            style="@style/TextAppearance.Lumen.Headline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="@string/viewer_connecting" />
+
+        <TextView
+            android:id="@+id/tvStatusHint"
+            style="@style/TextAppearance.Lumen.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/btnRetry"
+            style="@style/Widget.Lumen.Button.Outline"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/viewer_retry"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Нижняя панель управления -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_scrim_bottom"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="30dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnControlChip"
+                style="@style/TextAppearance.Lumen.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill"
+                android:drawableStart="@drawable/ic_touch"
+                android:drawablePadding="6dp"
+                android:drawableTint="@color/violet"
+                android:paddingStart="12dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="7dp"
+                android:text="@string/viewer_control"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/tvSessionInfo"
+                style="@style/TextAppearance.Lumen.Caption"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:gravity="end"
+                tools:text="00:42 · 12 к/с" />
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Lumen.Card.Inner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:contentPadding="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnKeyboard"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:contentDescription="@string/viewer_keyboard"
+                    android:src="@drawable/ic_keyboard"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnRemoteBack"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/viewer_back"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnRemoteHome"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/viewer_home"
+                    android:src="@drawable/ic_home"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnRemoteRecents"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/viewer_recents"
+                    android:src="@drawable/ic_recents"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnSnapshot"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/viewer_screenshot"
+                    android:src="@drawable/ic_snapshot"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnMore"
+                    style="@style/Widget.Lumen.IconButton"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/viewer_more"
+                    android:src="@drawable/ic_more"
+                    app:tint="@color/text_primary" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnEnd"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_button_danger"
+                    android:contentDescription="@string/viewer_disconnect"
+                    android:padding="14dp"
+                    android:src="@drawable/ic_close"
+                    app:tint="@color/danger" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</FrameLayout>

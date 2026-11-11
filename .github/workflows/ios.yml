@@ -1,0 +1,52 @@
+name: iOS
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "ios/**"
+  pull_request:
+    paths:
+      - "ios/**"
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & tests (iOS Simulator)
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Structural check (no Xcode required)
+        run: python3 tools/swift_structure_check.py ios
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build and test
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project LumenRemote.xcodeproj \
+            -scheme LumenRemote \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: ios/build/Logs/Test/**
+          if-no-files-found: ignore

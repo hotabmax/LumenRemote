@@ -1,0 +1,30 @@
+[Unit]
+Description=Lumen Remote relay
+Documentation=https://github.com/example/lumen-remote
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lumen
+Group=lumen
+WorkingDirectory=/opt/lumen/server
+EnvironmentFile=/etc/lumen/relay.env
+ExecStart=/usr/bin/node relay.js
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# Ограничения безопасности
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ReadOnlyPaths=/opt/lumen
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

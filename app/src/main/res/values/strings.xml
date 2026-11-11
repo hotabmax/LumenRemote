@@ -1,0 +1,226 @@
+<resources>
+    <string name="app_name">Lumen Remote</string>
+    <string name="app_tagline">Удалённый доступ к экрану</string>
+
+    <!-- Общее -->
+    <string name="cancel">Отмена</string>
+    <string name="close">Закрыть</string>
+    <string name="continue_label">Продолжить</string>
+    <string name="copy">Копировать</string>
+    <string name="copied">Скопировано</string>
+    <string name="done">Готово</string>
+    <string name="permission_needed">Нужно разрешение</string>
+
+    <!-- Нижняя навигация -->
+    <string name="tab_home">Главная</string>
+    <string name="tab_devices">Устройства</string>
+    <string name="tab_settings">Настройки</string>
+
+    <!-- Главный экран -->
+    <string name="home_greeting">Добро пожаловать</string>
+    <string name="home_hero_title">Подключитесь к любому экрану</string>
+    <string name="home_hero_subtitle">Просматривайте экран и управляйте телефоном на Android или iOS в реальном времени — через локальную сеть или интернет.</string>
+    <string name="home_hero_cta">Начать подключение</string>
+    <string name="home_hero_badge">Защищено сквозным PIN-кодом</string>
+
+    <string name="home_my_id_title">Мой идентификатор</string>
+    <string name="home_my_id_hint">Сообщите его партнёру, чтобы вам подключились</string>
+    <string name="home_my_pin">PIN-код</string>
+    <string name="home_host_cta">Принимать подключения</string>
+    <string name="home_recent">Недавние подключения</string>
+    <string name="home_recent_empty">Здесь появятся устройства, к которым вы подключались</string>
+    <string name="home_connect_title">Подключение по коду</string>
+    <string name="home_code_hint">Код устройства</string>
+    <string name="home_pin_hint">PIN-код</string>
+    <string name="home_connect_cta">Подключиться</string>
+    <string name="home_code_error">Введите 9 цифр кода</string>
+    <string name="home_pin_error">Введите 4 цифры PIN-кода</string>
+    <string name="home_enter_pin">Введите PIN-код устройства</string>
+    <string name="home_connect_hint">9 цифр — подключение через relay-сервер, IP-адрес — напрямую в локальной сети.</string>
+    <string name="home_my_pin_value">PIN %1$s</string>
+    <string name="home_status_lan">Локальная сеть: %1$s</string>
+    <string name="home_status_offline">Нет подключения к сети</string>
+
+    <!-- Устройства -->
+    <string name="devices_title">Устройства</string>
+    <string name="devices_subtitle">Сохранённые подключения и устройства рядом</string>
+    <string name="devices_saved">Сохранённые</string>
+    <string name="devices_nearby">Рядом с вами</string>
+    <string name="devices_nearby_searching">Поиск устройств в локальной сети…</string>
+    <string name="devices_nearby_found">Найдено устройств: %1$d</string>
+    <string name="devices_remove_hint">Долгое нажатие на сохранённое устройство — удалить его из списка.</string>
+    <string name="devices_nearby_empty">Поблизости никого нет. Запустите приём подключений на другом устройстве.</string>
+    <string name="devices_empty">Пока нет сохранённых устройств</string>
+    <string name="devices_empty_hint">Подключитесь по коду — устройство сохранится автоматически.</string>
+    <string name="devices_connect">Подключиться</string>
+    <string name="devices_remove">Удалить</string>
+    <string name="devices_remove_done">Устройство удалено</string>
+
+    <!-- Приём подключения -->
+    <string name="host_title">Приём подключения</string>
+    <string name="host_subtitle">Партнёр увидит ваш экран и сможет управлять устройством</string>
+    <string name="host_id_label">Код устройства</string>
+    <string name="host_pin_label">PIN-код</string>
+    <string name="host_mode_lan">Локальная сеть</string>
+    <string name="host_mode_relay">Через интернет</string>
+    <string name="host_lan_hint">Партнёр подключается по IP-адресу. Работает без интернета в одной Wi-Fi сети.</string>
+    <string name="host_relay_hint">Партнёр подключается по коду через relay-сервер. Работает из любой точки мира.</string>
+    <string name="host_relay_missing">Укажите адрес relay-сервера в настройках</string>
+    <string name="host_start">Начать трансляцию</string>
+    <string name="host_stop">Остановить</string>
+    <string name="host_waiting">Ожидание подключения…</string>
+    <string name="host_waiting_hint">Сообщите код и PIN-код партнёру</string>
+    <string name="host_connected">Подключено</string>
+    <string name="host_streaming">Трансляция экрана</string>
+    <string name="host_disconnected">Подключение завершено</string>
+    <string name="host_error">Ошибка подключения</string>
+    <string name="host_perm_capture">Захват экрана</string>
+    <string name="host_perm_control">Удалённое управление</string>
+    <string name="host_perm_notifications">Уведомления</string>
+    <string name="host_perm_granted">Разрешено</string>
+    <string name="host_perm_denied">Выдать</string>
+    <string name="host_perm_control_hint">Без этого разрешения партнёр сможет только смотреть экран</string>
+    <string name="host_view_only">Только просмотр</string>
+    <string name="host_full_control">Просмотр и управление</string>
+    <string name="host_ip">IP-адрес: %1$s</string>
+    <string name="host_secure_note">Соединение защищено PIN-кодом. Отключить партнёра можно в любой момент.</string>
+    <string name="host_control_on">Управление включено</string>
+    <string name="host_control_off">Управление выключено</string>
+    <string name="host_notification_title">Lumen Remote — экран передаётся</string>
+    <string name="host_notification_text">Партнёр видит ваш экран. Нажмите, чтобы вернуться.</string>
+    <string name="host_stop_notification">Остановить</string>
+    <string name="overlay_stop">Остановить трансляцию</string>
+    <string name="overlay_stop_short">Стоп</string>
+    <string name="overlay_permission_hint">Разрешите «Поверх других приложений» — на экране появится кнопка остановки трансляции</string>
+
+    <!-- Сессия (просмотр) -->
+    <string name="viewer_connecting">Устанавливаем соединение…</string>
+    <string name="viewer_auth">Проверяем PIN-код…</string>
+    <string name="viewer_waiting_frames">Ожидаем изображение…</string>
+    <string name="viewer_connected">Подключено</string>
+    <string name="viewer_failed">Не удалось подключиться</string>
+    <string name="viewer_retry">Повторить</string>
+    <string name="viewer_disconnect">Завершить</string>
+    <string name="viewer_view_only">Просмотр</string>
+    <string name="viewer_control">Управление</string>
+    <string name="viewer_control_hint">Управление недоступно: на устройстве партнёра не включён сервис управления</string>
+    <string name="viewer_keyboard">Клавиатура</string>
+    <string name="viewer_keyboard_hint">Текст отправится в активное поле партнёра</string>
+    <string name="viewer_send">Отправить</string>
+    <string name="viewer_back">Назад</string>
+    <string name="viewer_home">Домой</string>
+    <string name="viewer_recents">Недавние</string>
+    <string name="viewer_screenshot">Снимок</string>
+    <string name="viewer_screenshot_saved">Снимок сохранён в галерею</string>
+    <string name="viewer_screenshot_permission">Разрешите доступ к памяти, чтобы сохранить снимок</string>
+    <string name="viewer_quality">Качество</string>
+    <string name="viewer_quality_smooth">Плавность</string>
+    <string name="viewer_quality_sharp">Чёткость</string>
+    <string name="viewer_latency">%1$d мс</string>
+    <string name="viewer_fps">%1$d к/с</string>
+
+    <!-- Настройки -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_subtitle">Подключение, управление и безопасность</string>
+    <string name="settings_section_quality">Качество передачи</string>
+    <string name="settings_quality_value">%1$d%%</string>
+    <string name="settings_device_name">Имя устройства</string>
+    <string name="settings_device_name_desc">Так вас увидят партнёры при подключении</string>
+    <string name="viewer_connect">Подключиться</string>
+    <string name="viewer_quality_value">%1$d%%</string>
+    <string name="settings_fps">Частота кадров</string>
+    <string name="settings_fps_value">%1$d кадров/с</string>
+    <string name="settings_section_control">Управление</string>
+    <string name="settings_accessibility">Служба удалённого управления</string>
+    <string name="settings_accessibility_desc">Позволяет партнёру нажимать и свайпать на вашем экране</string>
+    <string name="settings_accessibility_on">Включена</string>
+    <string name="settings_accessibility_off">Не включена</string>
+    <string name="settings_confirm_touch">Подтверждать управление</string>
+    <string name="settings_confirm_touch_desc">Спрашивать разрешение перед каждым сеансом</string>
+    <string name="settings_section_security">Безопасность</string>
+    <string name="settings_require_pin">Всегда требовать PIN-код</string>
+    <string name="settings_require_pin_desc">Отклонять подключения без верного PIN-кода</string>
+    <string name="settings_allow_clipboard">Синхронизация буфера обмена</string>
+    <string name="settings_allow_clipboard_desc">Разрешать передачу текста между устройствами</string>
+    <string name="settings_section_relay">Relay-сервер</string>
+    <string name="settings_relay_url">Адрес сервера</string>
+    <string name="settings_relay_hint">ws://адрес:8080/ws</string>
+    <string name="settings_relay_save">Сохранить адрес</string>
+    <string name="settings_relay_required">Укажите адрес relay-сервера (wss://)</string>
+    <string name="relay_wss_required">В этой сборке допускается только защищённый адрес wss://</string>
+    <string name="settings_relay_saved">Адрес сохранён</string>
+    <string name="settings_relay_invalid">Адрес должен начинаться с ws:// или wss://</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_version">Версия %1$s</string>
+    <string name="settings_about_text">Lumen Remote передаёт экран и события управления между устройствами Android и iOS. Кодирование — JPEG-кадры, транспорт — прямое TCP-соединение или WebSocket relay.</string>
+    <string name="settings_ios_note">iOS-устройства могут подключаться как клиенты (просмотр и управление). Трансляция собственного экрана с iPhone ограничена системой iOS.</string>
+
+    <string name="host_perm_needed">Выдать</string>
+    <string name="host_diag_waiting">Ожидание кадров…</string>
+    <string name="host_diag_format">Кадры: %1$d · %2$d к/с · %3$d×%4$d</string>
+    <string name="host_content_hidden">Экран выключен или контент скрыт — трансляция приостановлена</string>
+    <string name="host_no_frames_secure">Захват не отдаёт кадры: возможен защищённый контент (FLAG_SECURE/DRM) или особенность прошивки</string>
+    <string name="host_keep_awake_hint">Не блокируйте экран: на Huawei/HarmonyOS при выключенном экране трансляция становится чёрной</string>
+    <string name="host_control_stale">Служба управления включена, но не подключена. Откройте настройки и включите её заново.</string>
+    <string name="host_gesture_rejected">Система отклонила жест — проверьте службу управления</string>
+    <string name="host_notifications_title">Нужны уведомления</string>
+    <string name="host_notifications_text">Без разрешения на уведомления система может остановить трансляцию (особенно на Huawei/HarmonyOS).</string>
+    <string name="host_open_settings">Открыть настройки</string>
+    <string name="host_start_anyway">Всё равно начать</string>
+    <string name="host_ready">Готово к подключению</string>
+    <string name="host_ready_hint">Начните трансляцию — и подтвердите захват экрана в системном окне</string>
+    <string name="host_relay_address">Relay: %1$s</string>
+    <string name="host_stats">Отправлено кадров: %1$d</string>
+    <string name="host_stop_first">Сначала остановите трансляцию</string>
+    <string name="host_viewer">%1$s · %2$s</string>
+    <string name="viewer_lan_mode">Локальная сеть · защищённое соединение</string>
+    <string name="viewer_relay_mode">Интернет · защищённое соединение</string>
+    <string name="viewer_peer_info">%1$s · защищённое соединение</string>
+    <string name="viewer_session_info">%1$s · %2$d к/с</string>
+    <string name="viewer_session_screen">Экран партнёра</string>
+
+    <!-- Действия и iOS -->
+    <string name="viewer_more">Дополнительные действия</string>
+    <string name="viewer_actions_title">Действия</string>
+    <string name="viewer_open_url_title">Открыть ссылку на устройстве партнёра</string>
+    <string name="viewer_open_url_desc">Браузер партнёра откроет указанный адрес</string>
+    <string name="viewer_clipboard_title">Отправить текст в буфер обмена</string>
+    <string name="viewer_clipboard_desc">Партнёр сможет вставить его в любом приложении</string>
+    <string name="viewer_quality_desc">Плавность или чёткость изображения</string>
+    <string name="viewer_url_hint">https://example.com</string>
+    <string name="viewer_url_invalid">Адрес должен начинаться с http:// или https://</string>
+    <string name="viewer_url_sent">Ссылка отправлена партнёру</string>
+    <string name="viewer_text_hint">Текст для буфера партнёра</string>
+    <string name="viewer_clipboard_sent">Текст отправлен в буфер партнёра</string>
+    <string name="viewer_quality_smooth_item">Плавно — 8 кадров/с, 45%%</string>
+    <string name="viewer_quality_sharp_item">Чётко — 16 кадров/с, 75%%</string>
+    <string name="viewer_quality_applied">Качество передачи обновлено</string>
+    <string name="viewer_no_frames_hint">Нет изображения: экран партнёра не меняется или захват остановлен системой</string>
+    <string name="viewer_no_frames_inactive">Партнёр не запустил трансляцию экрана</string>
+    <string name="viewer_no_frames_capture">Партнёр: захват не формирует кадры. Посмотрите диагностику на экране приёма</string>
+    <string name="viewer_no_frames_network">Партнёр сформировал кадров: %1$d, но до вас они не доходят — проверьте Wi-Fi</string>
+    <string name="viewer_no_control_info">%1$s · партнёр не разрешил управление</string>
+    <string name="viewer_tap_disabled">Партнёр не разрешил управление на своём устройстве</string>
+    <string name="viewer_ios_chip">iOS · просмотр</string>
+    <string name="viewer_ios_note">iOS-устройство передаёт экран через ReplayKit. Система iOS не разрешает удалённые касания — доступны ссылки, буфер обмена и просмотр.</string>
+    <string name="viewer_ios_gesture_denied">iOS не поддерживает удалённые касания. Используйте ссылку или буфер обмена.</string>
+    <string name="viewer_ios_connected">iOS-устройство подключено: доступен просмотр, ссылки и буфер обмена</string>
+    <string name="settings_quality_desc">Больше чёткости — выше нагрузка на сеть</string>
+
+    <!-- Служба доступности -->
+    <string name="accessibility_label">Lumen Remote — управление</string>
+    <string name="accessibility_description">Служба позволяет партнёру, подключённому по PIN-коду, выполнять касания, свайпы и нажатия клавиш на этом устройстве. Служба используется только во время активного сеанса.</string>
+
+    <!-- Уведомления -->
+    <string name="channel_service">Активный сеанс</string>
+    <string name="channel_service_desc">Уведомления о передаче экрана</string>
+
+    <!-- Ошибки -->
+    <string name="error_network">Проверьте подключение к сети</string>
+    <string name="error_host_unreachable">Устройство недоступно</string>
+    <string name="error_wrong_pin">Неверный PIN-код</string>
+    <string name="error_busy">Устройство уже занято другим подключением</string>
+    <string name="error_cancelled">Захват экрана отменён</string>
+    <string name="error_relay">Relay-сервер недоступен</string>
+    <string name="error_unknown">Что-то пошло не так</string>
+</resources>

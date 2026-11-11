@@ -1,0 +1,87 @@
+# XcodeGen-спецификация проекта Lumen Remote (iOS).
+#
+# Генерация:  brew install xcodegen && cd ios && xcodegen generate
+# Открыть:    open LumenRemote.xcodeproj
+name: LumenRemote
+
+options:
+  bundleIdPrefix: com.lumen.remote
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+  LumenRemote:
+    type: application
+    platform: iOS
+    sources:
+      - path: LumenRemote/App
+      - path: LumenRemote/Shared
+      - path: LumenRemote/Resources
+        excludes:
+          - "Info.plist"
+          - "LumenRemote.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lumen.remote
+        INFOPLIST_FILE: LumenRemote/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: LumenRemote/Resources/LumenRemote.entitlements
+        PRODUCT_NAME: LumenRemote
+    dependencies:
+      - target: LumenBroadcast
+        embed: true
+
+  LumenBroadcast:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: LumenRemote/Broadcast
+        excludes:
+          - "Info.plist"
+          - "Broadcast.entitlements"
+      - path: LumenRemote/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lumen.remote.broadcast
+        INFOPLIST_FILE: LumenRemote/Broadcast/Info.plist
+        CODE_SIGN_ENTITLEMENTS: LumenRemote/Broadcast/Broadcast.entitlements
+        PRODUCT_NAME: LumenBroadcast
+        SKIP_INSTALL: YES
+
+  LumenRemoteTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: LumenRemoteTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.lumen.remote.tests
+    dependencies:
+      - target: LumenRemote
+
+schemes:
+  LumenRemote:
+    build:
+      targets:
+        LumenRemote: all
+        LumenBroadcast: all
+        LumenRemoteTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LumenRemoteTests
+    archive:
+      config: Release

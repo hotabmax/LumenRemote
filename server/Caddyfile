@@ -1,0 +1,23 @@
+# Автоматический TLS (Let's Encrypt) и проксирование на relay.
+# Домен берётся из переменной RELAY_DOMAIN (см. .env).
+
+{$RELAY_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	# WebSocket и веб-клиент проксируются на relay без изменений.
+	reverse_proxy relay:8080 {
+		flush_interval -1
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

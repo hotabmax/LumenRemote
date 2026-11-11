@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android build & tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Gradle wrapper permissions
+        run: chmod +x ./gradlew
+
+      - name: Build debug
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Android Lint
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            app/build/reports/tests/**
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+
+  relay:
+    name: Relay server checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Syntax check
+        run: npm run check
+
+      - name: Smoke test (health endpoint)
+        run: |
+          node relay.js &
+          RELAY_PID=$!
+          curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8080/health
+          curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8080/ready
+          kill $RELAY_PID
+
+  python-tools:
+    name: Python tools (PEP 8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linters
+        run: pip install pycodestyle==2.12.1 websockets==13.1
+
+      - name: PEP 8
+        run: pycodestyle tools
+
+      - name: Syntax check
+        run: python -m compileall -q tools
+
+  web-client:
+    name: Web client checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: JavaScript syntax
+        run: node --check server/web/app.js

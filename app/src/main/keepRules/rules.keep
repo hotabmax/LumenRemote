@@ -1,0 +1,16 @@
+# R8/ProGuard-правила релизной сборки Lumen Remote.
+# AGP объединяет все файлы из src/main/keepRules и передаёт их R8.
+
+# Метаданные и generic-подписи нужны OkHttp и kotlinx.coroutines.
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes *Annotation*, SourceFile, LineNumberTable
+
+# OkHttp определяет TLS-провайдеры через reflection: отсутствующие классы — не ошибка.
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**
+
+# org.json — часть платформы Android, держим публичные члены нетронутыми.
+-keep class org.json.** { *; }

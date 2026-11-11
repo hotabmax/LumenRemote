@@ -1,0 +1,52 @@
+# Lumen Remote: relay + TLS-прокси.
+# Запуск:  cp .env.example .env && docker compose up -d --build
+services:
+  relay:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      HOST: 0.0.0.0
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      MAX_ROOMS: ${MAX_ROOMS:-5000}
+      MAX_PAYLOAD_BYTES: ${MAX_PAYLOAD_BYTES:-8388608}
+      ROOM_TTL_MS: ${ROOM_TTL_MS:-43200000}
+      JOIN_WINDOW_MS: ${JOIN_WINDOW_MS:-60000}
+      JOIN_MAX_ATTEMPTS: ${JOIN_MAX_ATTEMPTS:-10}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    expose:
+      - "8080"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - relay
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      RELAY_DOMAIN: ${RELAY_DOMAIN:?укажите RELAY_DOMAIN в .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

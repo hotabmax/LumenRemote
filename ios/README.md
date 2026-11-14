@@ -98,3 +98,26 @@ cmd(open_url|clipboard) ──────────────────�
 - События relay видны в Xcode Console (содержимое кадров не логируется).
 - Если расширения нет в системном списке «Повтор экрана» — проверьте bundle id
   `com.lumen.remote.broadcast` и совпадение App Group у обоих таргетов.
+
+## Неподписанная сборка (.ipa)
+
+Скрипт собирает приложение **без сертификатов и аккаунта Apple** — подпись отключена
+(`CODE_SIGNING_ALLOWED=NO`), расширение ReplayKit собирается вместе с приложением:
+
+```bash
+./ios/build-unsigned.sh                       # → ios/build/LumenRemote-unsigned.ipa
+./ios/build-unsigned.sh --out /tmp/app.ipa    # свой путь
+```
+
+В CI (GitHub Actions) тот же скрипт выполняет job `Unsigned IPA`: готовый архив лежит
+в артефактах сборки `LumenRemote-unsigned-ipa` (14 дней). Запустить можно вручную:
+Actions → `iOS` → `Run workflow` (`workflow_dispatch`).
+
+Что важно знать про неподписанный `.ipa`:
+
+- установить напрямую на iPhone нельзя — iOS требует подпись; архив нужно переподписать
+  своим Apple ID (Sideloadly, AltStore, Xcode) или собрать на macOS с выбранной командой;
+- без подписи не работают entitlements (App Group, Keychain), поэтому обмен настройками
+  между приложением и broadcast-расширением в такой сборке недоступен;
+- для тестов логики используйте симулятор (`xcodebuild -destination 'platform=iOS Simulator…' test`),
+  где подпись не требуется вовсе.

@@ -33,3 +33,7 @@ keystore.properties
 .kotlin/
 /captures/
 
+
+# Артефакты сборки iOS
+/ios/build
+

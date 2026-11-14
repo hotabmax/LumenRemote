@@ -58,7 +58,7 @@ class Prefs private constructor(context: Context) {
     var myPin: String
         get() {
             val stored = sp.getString(KEY_PIN, null)
-            if (stored != null && stored.length == Ids.PIN_LENGTH) return stored
+            if (stored != null && stored.length in Ids.MIN_PIN_LENGTH..Ids.MAX_PIN_LENGTH) return stored
             val generated = Ids.newPin()
             sp.edit().putString(KEY_PIN, generated).apply()
             return generated
@@ -90,6 +90,16 @@ class Prefs private constructor(context: Context) {
     var confirmTouch: Boolean
         get() = sp.getBoolean(KEY_CONFIRM_TOUCH, false)
         set(value) = sp.edit().putBoolean(KEY_CONFIRM_TOUCH, value).apply()
+
+    /** Спрашивать подтверждение при каждом подключении партнёра. */
+    var confirmConnections: Boolean
+        get() = sp.getBoolean(KEY_CONFIRM_CONNECTION, true)
+        set(value) = sp.edit().putBoolean(KEY_CONFIRM_CONNECTION, value).apply()
+
+    /** Показывать устройство в локальной сети (UDP-обнаружение). */
+    var discoverable: Boolean
+        get() = sp.getBoolean(KEY_DISCOVERABLE, true)
+        set(value) = sp.edit().putBoolean(KEY_DISCOVERABLE, value).apply()
 
     fun savedDevices(): List<DeviceRecord> {
         val raw = sp.getString(KEY_DEVICES, null) ?: return emptyList()
@@ -135,6 +145,8 @@ class Prefs private constructor(context: Context) {
         private const val KEY_REQUIRE_PIN = "require_pin"
         private const val KEY_CLIPBOARD = "allow_clipboard"
         private const val KEY_CONFIRM_TOUCH = "confirm_touch"
+        private const val KEY_CONFIRM_CONNECTION = "confirm_connection"
+        private const val KEY_DISCOVERABLE = "discoverable"
         private const val KEY_DEVICES = "devices"
 
         @Volatile

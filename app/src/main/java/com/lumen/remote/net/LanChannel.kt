@@ -1,5 +1,6 @@
 package com.lumen.remote.net
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,9 @@ import java.net.Socket
  * Кадр: [1 байт тип][4 байта длина][payload]. Тип 1 — JSON, тип 2 — JPEG.
  */
 class LanChannel(private val socket: Socket) : BasePeerChannel() {
+
+    override val remoteAddress: String?
+        get() = runCatching { socket.inetAddress?.hostAddress }.getOrNull()
 
     private val input = DataInputStream(BufferedInputStream(socket.getInputStream(), BUFFER))
     private val output = DataOutputStream(BufferedOutputStream(socket.getOutputStream(), BUFFER))
@@ -132,6 +136,7 @@ class LanServer(
 
     private val scope = kotlinx.coroutines.CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var serverSocket: ServerSocket? = null
+    private val activeClients = java.util.concurrent.atomic.AtomicInteger(0)
 
     @Volatile
     var running = false
@@ -148,8 +153,24 @@ class LanServer(
                 serverSocket = socket
                 while (running) {
                     val client = socket.accept()
+                    // Ограничение одновременных подключений: без него перебор
+                    // PIN и нехватка ресурсов превращаются в тривиальный DoS.
+                    if (activeClients.get() >= MAX_CLIENTS) {
+                        Log.w(TAG, "Отклонено подключение: занято ${activeClients.get()} слотов")
+                        runCatching { client.close() }
+                        continue
+                    }
                     runCatching { client.tcpNoDelay = true }
-                    onChannel(LanChannel(client))
+                    activeClients.incrementAndGet()
+                    val channel = LanChannel(client)
+                    scope.launch {
+                        channel.events.collect { event ->
+                            if (event is ChannelEvent.Closed || event is ChannelEvent.Failed) {
+                                activeClients.decrementAndGet()
+                            }
+                        }
+                    }
+                    onChannel(channel)
                 }
             } catch (e: Exception) {
                 if (running) onError(e.message ?: "Не удалось открыть порт $port")
@@ -162,6 +183,13 @@ class LanServer(
         runCatching { serverSocket?.close() }
         serverSocket = null
         scope.cancel()
+    }
+
+    private companion object {
+        const val TAG = "LumenLanServer"
+
+        /** Максимум одновременных входящих соединений. */
+        const val MAX_CLIENTS = 4
     }
 }
 

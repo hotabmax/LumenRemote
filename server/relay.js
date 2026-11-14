@@ -63,7 +63,15 @@ function log(level, message, extra) {
   const threshold = LOG_LEVELS[config.logLevel] || LOG_LEVELS.info;
   if (LOG_LEVELS[level] < threshold) return;
   const entry = { ts: new Date().toISOString(), level, message, ...(extra || {}) };
+  // Код комнаты — секрет пары: в журнал пишем только префикс.
+  if (typeof entry.code === 'string') entry.code = maskCode(entry.code);
   console.log(JSON.stringify(entry));
+}
+
+/** Маскирует код комнаты для журналов. */
+function maskCode(code) {
+  const text = String(code || '');
+  return text.length <= 3 ? '***' : `${text.slice(0, 3)}***`;
 }
 
 // endregion
@@ -76,22 +84,56 @@ const rooms = new Map();
 const joinAttempts = new Map();
 const startedAt = Date.now();
 
+/** Заголовки безопасности для HTTP-ответов (включая веб-клиент). */
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Content-Security-Policy':
+    "default-src 'self'; img-src 'self' data: blob:; " +
+    "script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+    "connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'none'",
+};
+
+// Периодическая очистка счётчиков попыток: карта не должна расти бесконечно.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of joinAttempts) {
+    if (now > entry.resetAt + config.joinWindowMs) joinAttempts.delete(ip);
+  }
+  if (joinAttempts.size > 50000) joinAttempts.clear();
+}, 5 * 60 * 1000).unref();
+
 let wss = null;
 
-function isOriginAllowed(origin) {
-  if (config.allowedOrigins.length === 0) return true;
-  if (!origin) return false;
-  return config.allowedOrigins.includes(origin);
+function isOriginAllowed(origin, host) {
+  if (!origin) return true; // нативные клиенты без Origin
+  if (config.allowedOrigins.length > 0) return config.allowedOrigins.includes(origin);
+  // Fail-closed: без явного списка разрешаем только same-origin.
+  if (!host) return false;
+  return origin === `https://${host}` || origin === `http://${host}`;
+}
+
+/** Приватные и loopback-адреса, от которых можно принимать X-Forwarded-For. */
+function isTrustedProxyAddress(address) {
+  if (!address) return false;
+  const plain = address.replace(/^::ffff:/, '');
+  if (plain === '::1' || plain === '127.0.0.1') return true;
+  return /^10\./.test(plain) ||
+    /^192\.168\./.test(plain) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(plain);
 }
 
 function clientIp(request) {
-  if (config.trustProxy) {
+  const remote = request.socket.remoteAddress || 'unknown';
+  // Заголовок принимаем только от доверенного локального прокси.
+  if (config.trustProxy && isTrustedProxyAddress(remote)) {
     const forwarded = request.headers['x-forwarded-for'];
     if (typeof forwarded === 'string' && forwarded.length > 0) {
       return forwarded.split(',')[0].trim();
     }
   }
-  return request.socket.remoteAddress || 'unknown';
+  return remote;
 }
 
 /** Возвращает true, если с этого IP превышен лимит попыток входа. */
@@ -204,21 +246,23 @@ function serveStatic(pathname, res, method) {
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   const filePath = path.resolve(WEB_ROOT, relative);
   if (!filePath.startsWith(WEB_ROOT)) {
-    res.writeHead(403);
+    res.writeHead(403, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Forbidden');
     return;
   }
   fs.readFile(filePath, (error, content) => {
     if (error) {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.writeHead(404, {
+        ...SECURITY_HEADERS,
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
       res.end('Not found');
       return;
     }
     res.writeHead(200, {
+      ...SECURITY_HEADERS,
       'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream',
       'Cache-Control': 'no-cache',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'no-referrer',
     });
     res.end(method === 'HEAD' ? undefined : content);
   });
@@ -228,7 +272,7 @@ const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname;
 
   if (pathname === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
       uptimeSeconds: Math.round((Date.now() - startedAt) / 1000),
@@ -236,7 +280,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (pathname === '/ready') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ready',
       rooms: rooms.size,
@@ -260,7 +304,7 @@ wss = new WebSocketServer({
   path: '/ws',
   maxPayload: config.maxPayloadBytes,
   verifyClient(info, done) {
-    if (!isOriginAllowed(info.origin)) {
+    if (!isOriginAllowed(info.origin, info.req.headers.host)) {
       log('warn', 'origin_rejected', { origin: info.origin });
       done(false, 403, 'Forbidden origin');
       return;

@@ -56,6 +56,11 @@
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
 
+        <!-- Кнопки «Разрешить»/«Отклонить» в уведомлении о подключении -->
+        <receiver
+            android:name=".host.ApprovalReceiver"
+            android:exported="false" />
+
         <!-- Удалённое управление (касания, клавиши, ввод текста) -->
         <service
             android:name=".control.RemoteControlService"

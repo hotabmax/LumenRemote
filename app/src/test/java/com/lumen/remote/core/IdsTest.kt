@@ -17,12 +17,22 @@ class IdsTest {
     }
 
     @Test
-    fun `pin has four digits`() {
+    fun `pin has six digits`() {
         repeat(50) {
             val pin = Ids.newPin()
-            assertEquals(4, pin.length)
-            assertTrue(pin.toInt() in 1000..9999)
+            assertEquals(Ids.PIN_LENGTH, pin.length)
+            assertEquals(6, pin.length)
+            assertTrue(pin.toInt() in 100_000..999_999)
         }
+    }
+
+    @Test
+    fun `isPin accepts legacy and new length`() {
+        assertTrue(Ids.isPin("1234"))
+        assertTrue(Ids.isPin("123456"))
+        assertFalse(Ids.isPin("123"))
+        assertFalse(Ids.isPin("1234567"))
+        assertFalse(Ids.isPin("12a456"))
     }
 
     @Test

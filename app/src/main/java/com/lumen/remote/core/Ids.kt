@@ -7,25 +7,32 @@ object Ids {
     /** Длина кода подключения (9 цифр). */
     const val CODE_LENGTH = 9
 
-    /** Длина PIN-кода (4 цифры). */
-    const val PIN_LENGTH = 4
+    /** Длина PIN-кода (6 цифр). */
+    const val PIN_LENGTH = 6
+
+    /** Минимальная длина PIN для совместимости со старыми настройками. */
+    const val MIN_PIN_LENGTH = 4
+
+    /** Максимальная длина PIN. */
+    const val MAX_PIN_LENGTH = 6
 
     private const val CODE_MIN = 100_000_000
     private const val CODE_BOUND = 900_000_000
-    private const val PIN_MIN = 1000
-    private const val PIN_BOUND = 9000
+    private const val PIN_MIN = 100_000
+    private const val PIN_BOUND = 900_000
 
     private val random = SecureRandom()
 
     /** 9-значный код подключения. */
     fun newCode(): String = (CODE_MIN + random.nextInt(CODE_BOUND)).toString()
 
-    /** 4-значный PIN-код. */
+    /** 6-значный PIN-код. */
     fun newPin(): String = (PIN_MIN + random.nextInt(PIN_BOUND)).toString()
 
     fun isCode(value: String): Boolean = value.filter { it.isDigit() }.length == CODE_LENGTH
 
-    fun isPin(value: String): Boolean = value.length == PIN_LENGTH && value.all { it.isDigit() }
+    fun isPin(value: String): Boolean =
+        value.length in MIN_PIN_LENGTH..MAX_PIN_LENGTH && value.all { it.isDigit() }
 
     fun formatCode(code: String): String {
         val digits = code.filter { it.isDigit() }

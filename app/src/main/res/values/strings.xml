@@ -91,6 +91,18 @@
     <string name="host_stop_notification">Остановить</string>
     <string name="overlay_stop">Остановить трансляцию</string>
     <string name="overlay_stop_short">Стоп</string>
+    <string name="approval_title">Запрос на подключение</string>
+    <string name="approval_unknown_device">Неизвестное устройство</string>
+    <string name="approval_allow">Разрешить</string>
+    <string name="approval_deny">Отклонить</string>
+    <string name="approval_denied">Подключение отклонено</string>
+    <string name="approval_dialog_text">%1$s (%2$s) просит доступ к вашему экрану.</string>
+    <string name="channel_alert">Запросы на подключение</string>
+    <string name="channel_alert_desc">Уведомления о попытках подключиться к вашему экрану</string>
+    <string name="settings_confirm_connection">Подтверждать подключение</string>
+    <string name="settings_confirm_connection_desc">Спрашивать разрешение перед каждым подключением к экрану</string>
+    <string name="settings_discoverable">Видимость в локальной сети</string>
+    <string name="settings_discoverable_desc">Другие устройства видят вас в списке рядом. Отключите, если не нужно</string>
     <string name="overlay_permission_hint">Разрешите «Поверх других приложений» — на экране появится кнопка остановки трансляции</string>
 
     <!-- Сессия (просмотр) -->

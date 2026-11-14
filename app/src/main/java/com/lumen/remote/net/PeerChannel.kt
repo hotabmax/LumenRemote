@@ -31,6 +31,9 @@ interface PeerChannel {
 
     val isOpen: Boolean
 
+    /** Адрес партнёра для журнала и троттлинга попыток (LAN/IP, relay/код). */
+    val remoteAddress: String? get() = null
+
     fun send(json: JSONObject): Boolean
 
     fun sendFrame(jpeg: ByteArray): Boolean

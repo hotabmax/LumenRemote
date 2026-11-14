@@ -241,6 +241,29 @@ class HostActivity : AppCompatActivity() {
         render(HostSession.state.value)
     }
 
+    /** Диалог подтверждения подключения, пока приложение на экране. */
+    private var approvalDialog: androidx.appcompat.app.AlertDialog? = null
+
+    /** Диалог подтверждения: параллельно с уведомлением, если приложение открыто. */
+    private fun showApprovalDialog(name: String?, platform: String?) {
+        if (approvalDialog != null) return
+        val device = name ?: getString(R.string.approval_unknown_device)
+        approvalDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.approval_title)
+            .setMessage(getString(R.string.approval_dialog_text, device, platform ?: "Android"))
+            .setPositiveButton(R.string.approval_allow) { _, _ -> HostSession.approvePending() }
+            .setNegativeButton(R.string.approval_deny) { _, _ ->
+                HostSession.denyPending(getString(R.string.approval_denied))
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun hideApprovalDialog() {
+        approvalDialog?.dismiss()
+        approvalDialog = null
+    }
+
     private fun renderMode() {
         val views = binding
         val relay = mode == HostSession.Mode.RELAY
@@ -254,6 +277,11 @@ class HostActivity : AppCompatActivity() {
         val views = binding
         val active = state.isActive
         started = active || started
+        if (state.phase == HostSession.Phase.PENDING) {
+            showApprovalDialog(state.viewerName, state.viewerPlatform)
+        } else {
+            hideApprovalDialog()
+        }
 
         views.tvCode.text = Ids.formatCode(state.code.ifBlank { prefs.myId })
         views.tvPin.text = getString(R.string.home_my_pin_value, state.pin.ifBlank { prefs.myPin })
@@ -288,6 +316,11 @@ class HostActivity : AppCompatActivity() {
             HostSession.Phase.WAITING -> {
                 views.tvStatus.text = getString(R.string.host_waiting)
                 views.tvStatusHint.text = getString(R.string.host_waiting_hint)
+                views.cardConnected.visibility = android.view.View.GONE
+            }
+            HostSession.Phase.PENDING -> {
+                views.tvStatus.text = getString(R.string.approval_title)
+                views.tvStatusHint.text = state.viewerName ?: getString(R.string.host_waiting_hint)
                 views.cardConnected.visibility = android.view.View.GONE
             }
             HostSession.Phase.IDLE -> {

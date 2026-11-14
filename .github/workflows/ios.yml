@@ -9,17 +9,19 @@ on:
     paths:
       - "ios/**"
 
+permissions:
+  contents: read
+
 concurrency:
   group: ios-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   build-and-test:
     name: Build & tests (iOS Simulator)
     runs-on: macos-14
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Structural check (no Xcode required)
         run: python3 tools/swift_structure_check.py ios
@@ -45,7 +47,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ios-test-results
           path: ios/build/Logs/Test/**

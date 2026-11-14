@@ -12,6 +12,7 @@ import com.lumen.remote.control.RemoteControlService
 import com.lumen.remote.core.BuildFlags
 import com.lumen.remote.core.Prefs
 import com.lumen.remote.databinding.FragmentSettingsBinding
+import com.lumen.remote.net.Discovery
 import com.lumen.remote.net.RelayChannel
 import com.lumen.remote.util.toast
 
@@ -72,6 +73,17 @@ class SettingsFragment : Fragment() {
 
         views.swClipboard.isChecked = prefs.allowClipboard
         views.swClipboard.setOnCheckedChangeListener { _, checked -> prefs.allowClipboard = checked }
+
+        views.swConfirmConnect.isChecked = prefs.confirmConnections
+        views.swConfirmConnect.setOnCheckedChangeListener { _, checked ->
+            prefs.confirmConnections = checked
+        }
+
+        views.swDiscoverable.isChecked = prefs.discoverable
+        views.swDiscoverable.setOnCheckedChangeListener { _, checked ->
+            prefs.discoverable = checked
+            if (!checked) Discovery.stopBroadcast()
+        }
 
         views.etRelay.setText(prefs.relayUrl)
         views.btnSaveRelay.setOnClickListener {

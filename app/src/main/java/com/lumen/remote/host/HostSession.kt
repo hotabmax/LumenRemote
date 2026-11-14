@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -40,7 +42,7 @@ object HostSession {
         RELAY(Prefs.MODE_RELAY);
     }
 
-    enum class Phase { IDLE, WAITING, CONNECTED, ERROR }
+    enum class Phase { IDLE, WAITING, PENDING, CONNECTED, ERROR }
 
     data class State(
         val phase: Phase = Phase.IDLE,
@@ -63,13 +65,18 @@ object HostSession {
         val screenHeight: Int = 0,
         val startedAt: Long = 0
     ) {
-        val isActive: Boolean get() = phase == Phase.WAITING || phase == Phase.CONNECTED
+        val isActive: Boolean get() = phase == Phase.WAITING || phase == Phase.PENDING ||
+            phase == Phase.CONNECTED
     }
 
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private const val LOCAL_KEY = "local"
+    private const val FAILURE_PAUSE_MS = 800L
+    private const val APPROVAL_TIMEOUT_MS = 60_000L
     private var appContext: Context? = null
     private var prefs: Prefs? = null
     private var lanServer: LanServer? = null
@@ -81,6 +88,11 @@ object HostSession {
     private var channel: PeerChannel? = null
     @Volatile
     private var authenticated = false
+
+    /** Ждём подтверждения подключения от владельца телефона. */
+    private var awaitingApproval = false
+    private var pendingToken: String? = null
+    private var approvalJob: Job? = null
     @Volatile
     private var stopping = false
 
@@ -147,6 +159,12 @@ object HostSession {
         channel?.close("Сеанс завершён")
         channel = null
         authenticated = false
+        awaitingApproval = false
+        pendingToken = null
+        approvalJob?.cancel()
+        approvalJob = null
+        ConnectionApproval.hide(appContext)
+        AuthGuard.prune()
         lanServer?.stop()
         lanServer = null
         Discovery.stopBroadcast()
@@ -251,13 +269,16 @@ object HostSession {
     // region LAN
 
     private fun startLan(context: Context, p: Prefs) {
-        Discovery.startBroadcast(
-            context = context,
-            id = p.myId,
-            name = p.deviceName,
-            port = NetUtils.DEFAULT_PORT,
-            requiresPin = p.requirePin
-        )
+        // Приватность: по настройке устройство может не афишироваться в сети.
+        if (p.discoverable) {
+            Discovery.startBroadcast(
+                context = context,
+                id = p.myId,
+                name = p.deviceName,
+                port = NetUtils.DEFAULT_PORT,
+                requiresPin = p.requirePin
+            )
+        }
         val server = LanServer(
             port = NetUtils.DEFAULT_PORT,
             onChannel = { bindChannel(it) },
@@ -331,7 +352,7 @@ object HostSession {
                         if (_state.value.mode == Mode.RELAY) scheduleRelayReconnect()
                     }
                     is ChannelEvent.Closed -> onChannelClosed(ch)
-                    ChannelEvent.Open -> runCatching { ch.send(hostHello()) }
+                    ChannelEvent.Open -> runCatching { ch.send(hostHello(anonymous = true)) }
                 }
             }
         }
@@ -371,18 +392,32 @@ object HostSession {
         val ch = channel ?: return
         when (Proto.type(json)) {
             Proto.AUTH -> {
+                val key = ch.remoteAddress ?: LOCAL_KEY
+                val blockedMs = AuthGuard.blockRemainingMs(key)
+                if (blockedMs > 0) {
+                    val seconds = (blockedMs + 999) / 1000
+                    ch.send(JSONObject().put(Proto.T, Proto.AUTH_FAIL))
+                    scope.launch {
+                        delay(200)
+                        ch.close("Слишком много попыток. Повторите через $seconds с")
+                    }
+                    return
+                }
                 val requirePin = prefs?.requirePin ?: true
-                val correct = !requirePin || Proto.parsePin(json) == _state.value.pin
+                val correct = !requirePin || pinMatches(Proto.parsePin(json), _state.value.pin)
                 if (correct) {
+                    AuthGuard.registerSuccess(key)
                     authenticated = true
                     // Зритель ждёт auth_ok с данными партнёра, а затем шлёт свой hello;
                     // отдельный hello — для совместимости со старыми клиентами.
                     ch.send(hostHello().put(Proto.T, Proto.AUTH_OK))
                     ch.send(hostHello())
                 } else {
+                    val blocked = AuthGuard.registerFailure(key)
                     ch.send(JSONObject().put(Proto.T, Proto.AUTH_FAIL))
+                    val pause = if (blocked > 0) 0L else FAILURE_PAUSE_MS
                     scope.launch {
-                        delay(300)
+                        delay(pause)
                         ch.close("Неверный PIN-код")
                     }
                     _state.update { it.copy(lastError = appContext?.getString(R.string.error_wrong_pin)) }
@@ -393,18 +428,11 @@ object HostSession {
                 authenticated = true
                 val hello = Proto.parseHello(json)
                 viewerSupportsH264 = hello.codecs.contains(Proto.CODEC_H264, ignoreCase = true)
-                _state.update {
-                    it.copy(
-                        phase = Phase.CONNECTED,
-                        viewerName = hello.name,
-                        viewerPlatform = hello.platform,
-                        lastError = null
-                    )
+                if (prefs?.confirmConnections != false) {
+                    requestApproval(hello)
+                } else {
+                    markConnected(hello)
                 }
-                ch.send(hostHello())
-                // Новому зрителю сразу отдаём SPS/PPS: без них его декодер
-                // не стартует, и экран остаётся чёрным.
-                lastVideoConfig?.let { config -> ch.sendVideoFrame(config.copyOf()) }
             }
             Proto.TAP -> if (canControl()) {
                 val tap = Proto.parseTap(json)
@@ -447,6 +475,98 @@ object HostSession {
         }
     }
 
+    /** Сравнение PIN без преждевременного выхода: не даёт утечки по времени. */
+    private fun pinMatches(entered: String, expected: String): Boolean {
+        val a = entered.toByteArray(Charsets.UTF_8)
+        val b = expected.toByteArray(Charsets.UTF_8)
+        return a.size == b.size && MessageDigest.isEqual(a, b)
+    }
+
+    /** Подтверждение получено — сеанс становится активным. */
+    private fun markConnected(hello: Proto.Hello) {
+        _state.update {
+            it.copy(
+                phase = Phase.CONNECTED,
+                viewerName = hello.name,
+                viewerPlatform = hello.platform,
+                lastError = null
+            )
+        }
+        val ch = channel ?: return
+        ch.send(hostHello())
+        // Новому зрителю сразу отдаём SPS/PPS: без них его декодер не стартует.
+        lastVideoConfig?.let { config -> ch.sendVideoFrame(config.copyOf()) }
+    }
+
+    /** Спрашивает у владельца телефона разрешение на подключение. */
+    private fun requestApproval(hello: Proto.Hello) {
+        val token = UUID.randomUUID().toString()
+        awaitingApproval = true
+        pendingToken = token
+        _state.update {
+            it.copy(
+                phase = Phase.PENDING,
+                viewerName = hello.name,
+                viewerPlatform = hello.platform,
+                lastError = null
+            )
+        }
+        val address = channel?.remoteAddress
+        ConnectionApproval.show(appContext, token, hello.name, hello.platform, address)
+        approvalJob?.cancel()
+        approvalJob = scope.launch {
+            delay(APPROVAL_TIMEOUT_MS)
+            if (awaitingApproval && pendingToken == token) {
+                denyPending("Подключение не подтверждено")
+            }
+        }
+    }
+
+    /** Пользователь разрешил подключение (из диалога или уведомления). */
+    fun approvePending(token: String? = null) {
+        if (!awaitingApproval) return
+        if (token != null && pendingToken != null && token != pendingToken) return
+        val hello = Proto.Hello(
+            name = _state.value.viewerName ?: "Устройство",
+            platform = _state.value.viewerPlatform ?: "Android",
+            model = "",
+            width = 0,
+            height = 0,
+            control = false,
+            pinRequired = false
+        )
+        awaitingApproval = false
+        pendingToken = null
+        approvalJob?.cancel()
+        approvalJob = null
+        ConnectionApproval.hide(appContext)
+        markConnected(hello)
+    }
+
+    /** Пользователь отклонил подключение или истекло время ожидания. */
+    fun denyPending(reason: String? = null) {
+        if (!awaitingApproval) return
+        awaitingApproval = false
+        pendingToken = null
+        approvalJob?.cancel()
+        approvalJob = null
+        ConnectionApproval.hide(appContext)
+        val ch = channel
+        _state.update {
+            it.copy(
+                phase = Phase.WAITING,
+                viewerName = null,
+                viewerPlatform = null,
+                lastError = reason
+            )
+        }
+        scope.launch {
+            runCatching { ch?.send(JSONObject().put(Proto.T, Proto.BYE)) }
+            delay(150)
+            runCatching { ch?.close(reason ?: "Подключение отклонено") }
+        }
+    }
+
     private fun canControl(): Boolean =
         authenticated && !_state.value.viewOnly && RemoteControlService.instance != null
 
@@ -480,18 +600,18 @@ object HostSession {
         val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
         runCatching { manager.setPrimaryClip(ClipData.newPlainText("Lumen Remote", text)) }
     }
-    private fun hostHello(): JSONObject {
+    private fun hostHello(anonymous: Boolean = false): JSONObject {
         val p = prefs
         val current = _state.value
         return Proto.hello(
-            name = p?.deviceName ?: "Android",
-            platform = "Android",
-            model = Build.MODEL ?: "Android",
-            width = current.screenWidth,
-            height = current.screenHeight,
-            control = RemoteControlService.instance != null,
+            name = if (anonymous) "" else p?.deviceName ?: "Android",
+            platform = if (anonymous) "" else "Android",
+            model = if (anonymous) "" else Build.MODEL ?: "Android",
+            width = if (anonymous) 0 else current.screenWidth,
+            height = if (anonymous) 0 else current.screenHeight,
+            control = !anonymous && RemoteControlService.instance != null,
             pinRequired = p?.requirePin ?: true,
-            codecs = "${Proto.CODEC_H264},${Proto.CODEC_JPEG}"
+            codecs = if (anonymous) "" else "${Proto.CODEC_H264},${Proto.CODEC_JPEG}"
         )
     }
 

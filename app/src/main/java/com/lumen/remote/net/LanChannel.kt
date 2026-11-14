@@ -19,22 +19,49 @@ import java.net.ServerSocket
 import java.net.Socket
 
 /**
- * Канал «по локальной сети»: прямое TCP-соединение с простой кадровкой.
+ * Канал «по локальной сети»: прямое TCP-соединение с кадровой разметкой.
  *
- * Кадр: [1 байт тип][4 байта длина][payload]. Тип 1 — JSON, тип 2 — JPEG.
+ * Кадр: `[1 байт тип][4 байта длина][payload]`. Тип 1 — JSON, 2 — JPEG, 3 — видео.
+ * Если рукопожатие прошло, payload каждого кадра дополнительно шифруется
+ * AES-256-GCM с одноразовым nonce из счётчика направления.
  */
-class LanChannel(private val socket: Socket) : BasePeerChannel() {
+class LanChannel(
+    private val socket: Socket,
+    private val input: DataInputStream,
+    private val output: DataOutputStream,
+    private val sessionKey: ByteArray?,
+    private val direction: Byte,
+    private val peerDirection: Byte,
+    private val prefetched: LanHandshake.Frame?,
+    initialOutCounter: Long
+) : BasePeerChannel() {
+
+    /** Незашифрованный канал (старый партнёр или режим без PIN). */
+    constructor(socket: Socket) : this(
+        socket = socket,
+        input = DataInputStream(BufferedInputStream(socket.getInputStream(), BUFFER)),
+        output = DataOutputStream(BufferedOutputStream(socket.getOutputStream(), BUFFER)),
+        sessionKey = null,
+        direction = LanCrypto.DIR_CLIENT,
+        peerDirection = LanCrypto.DIR_HOST,
+        prefetched = null,
+        initialOutCounter = 0
+    )
 
     override val remoteAddress: String?
         get() = runCatching { socket.inetAddress?.hostAddress }.getOrNull()
 
-    private val input = DataInputStream(BufferedInputStream(socket.getInputStream(), BUFFER))
-    private val output = DataOutputStream(BufferedOutputStream(socket.getOutputStream(), BUFFER))
+    /** Канал шифруется ключом сеанса. */
+    override val isSecure: Boolean get() = sessionKey != null
+
     private val writeLock = Any()
     private val outbox = Channel<Outgoing>(capacity = OUTBOX_CAPACITY)
 
     private var readJob: Job? = null
     private var writeJob: Job? = null
+
+    private var outCounter = initialOutCounter
+    private var inCounter = 0L
 
     private class Outgoing(val type: Int, val payload: ByteArray)
 
@@ -47,6 +74,7 @@ class LanChannel(private val socket: Socket) : BasePeerChannel() {
 
     private suspend fun readLoop() {
         try {
+            prefetched?.let { deliverFrame(it.type, it.payload) }
             while (isOpen) {
                 val type = input.readUnsignedByte()
                 val length = input.readInt()
@@ -55,16 +83,33 @@ class LanChannel(private val socket: Socket) : BasePeerChannel() {
                 }
                 val payload = ByteArray(length)
                 input.readFully(payload)
-                when (type) {
-                    TYPE_JSON -> runCatching {
-                        JSONObject(String(payload, Charsets.UTF_8))
-                    }.getOrNull()?.let { deliverText(it) }
-                    TYPE_FRAME -> postFrame(payload)
-                    TYPE_VIDEO -> postVideo(payload)
-                }
+                deliverFrame(type, payload)
             }
         } catch (e: Exception) {
             if (isOpen) close(e.message ?: "Соединение потеряно")
+        }
+    }
+
+    /** Расшифровывает кадр (если канал защищён) и отдаёт наверх. */
+    private suspend fun deliverFrame(type: Int, payload: ByteArray) {
+        val key = sessionKey
+        val plain = if (key == null) {
+            payload
+        } else {
+            val decrypted = LanCrypto.open(
+                key,
+                LanCrypto.nonce(peerDirection, inCounter),
+                type,
+                payload
+            ) ?: throw IOException("Кадр не прошёл проверку подлинности")
+            inCounter += 1
+            decrypted
+        }
+        when (type) {
+            TYPE_JSON -> runCatching { JSONObject(String(plain, Charsets.UTF_8)) }
+                .getOrNull()?.let { deliverText(it) }
+            TYPE_FRAME -> postFrame(plain)
+            TYPE_VIDEO -> postVideo(plain)
         }
     }
 
@@ -72,10 +117,23 @@ class LanChannel(private val socket: Socket) : BasePeerChannel() {
         for (item in outbox) {
             if (!isOpen) break
             try {
+                val key = sessionKey
+                val payload = if (key == null) {
+                    item.payload
+                } else {
+                    val sealed = LanCrypto.seal(
+                        key,
+                        LanCrypto.nonce(direction, outCounter),
+                        item.type,
+                        item.payload
+                    )
+                    outCounter += 1
+                    sealed
+                }
                 synchronized(writeLock) {
                     output.writeByte(item.type)
-                    output.writeInt(item.payload.size)
-                    output.write(item.payload)
+                    output.writeInt(payload.size)
+                    output.write(payload)
                     output.flush()
                 }
             } catch (e: IOException) {
@@ -92,7 +150,10 @@ class LanChannel(private val socket: Socket) : BasePeerChannel() {
         if (outbox.trySend(item).isSuccess) return true
         // Очередь переполнена кадрами — управляющие сообщения не теряем.
         if (type == TYPE_JSON) {
-            scope.launch { outbox.send(item) }
+            scope.launch {
+                // Канал мог закрыться между trySend и отправкой.
+                runCatching { outbox.send(item) }
+            }
             return true
         }
         return false
@@ -126,10 +187,14 @@ class LanChannel(private val socket: Socket) : BasePeerChannel() {
 }
 
 /**
- * Принимает входящие подключения в локальной сети (режим «принимаю подключение»).
+ * Принимает входящие подключения в локальной сети.
+ *
+ * Если задан [pinProvider], хост сначала пытается провести защищённое
+ * рукопожатие; кадр старого клиента обрабатывается как обычно.
  */
 class LanServer(
     private val port: Int,
+    private val pinProvider: (() -> String)? = null,
     private val onChannel: (PeerChannel) -> Unit,
     private val onError: (String) -> Unit
 ) {
@@ -162,7 +227,11 @@ class LanServer(
                     }
                     runCatching { client.tcpNoDelay = true }
                     activeClients.incrementAndGet()
-                    val channel = LanChannel(client)
+                    val channel = acceptChannel(client)
+                    if (channel == null) {
+                        activeClients.decrementAndGet()
+                        continue
+                    }
                     scope.launch {
                         channel.events.collect { event ->
                             if (event is ChannelEvent.Closed || event is ChannelEvent.Failed) {
@@ -178,6 +247,32 @@ class LanServer(
         }
     }
 
+    /** Готовит канал: с шифрованием, если партнёр его поддерживает. */
+    private fun acceptChannel(client: Socket): PeerChannel? {
+        val input = DataInputStream(BufferedInputStream(client.getInputStream(), BUFFER))
+        val output = DataOutputStream(BufferedOutputStream(client.getOutputStream(), BUFFER))
+        val provider = pinProvider ?: return LanChannel(client)
+        var result: LanHandshake.HostResult? = null
+        LanHandshake.withHandshakeTimeout(client) {
+            result = LanHandshake.host(input, output, provider)
+        }
+        val handshake = result ?: return null
+        if (handshake.key == null && handshake.prefetched == null) {
+            runCatching { client.close() }
+            return null
+        }
+        return LanChannel(
+            socket = client,
+            input = input,
+            output = output,
+            sessionKey = handshake.key,
+            direction = LanCrypto.DIR_HOST,
+            peerDirection = LanCrypto.DIR_CLIENT,
+            prefetched = handshake.prefetched,
+            initialOutCounter = handshake.outCounterStart
+        )
+    }
+
     fun stop() {
         running = false
         runCatching { serverSocket?.close() }
@@ -187,6 +282,7 @@ class LanServer(
 
     private companion object {
         const val TAG = "LumenLanServer"
+        const val BUFFER = 64 * 1024
 
         /** Максимум одновременных входящих соединений. */
         const val MAX_CLIENTS = 4
@@ -195,15 +291,47 @@ class LanServer(
 
 object LanClient {
 
-    suspend fun connect(host: String, port: Int, timeoutMs: Int = 8000): PeerChannel =
-        withContext(Dispatchers.IO) {
-            val socket = Socket()
-            try {
-                socket.connect(InetSocketAddress(host.trim(), port), timeoutMs)
-                LanChannel(socket)
-            } catch (e: Exception) {
-                runCatching { socket.close() }
-                throw e
+    /**
+     * Подключается к хосту.
+     *
+     * При заданном [pin] сначала выполняется защищённое рукопожатие; если хост
+     * старый и не поддерживает шифрование, соединение продолжается без него.
+     */
+    suspend fun connect(
+        host: String,
+        port: Int,
+        pin: String? = null,
+        timeoutMs: Int = 8000
+    ): PeerChannel = withContext(Dispatchers.IO) {
+        val socket = Socket()
+        try {
+            socket.connect(InetSocketAddress(host.trim(), port), timeoutMs)
+            socket.tcpNoDelay = true
+            val input = DataInputStream(BufferedInputStream(socket.getInputStream(), BUFFER))
+            val output = DataOutputStream(BufferedOutputStream(socket.getOutputStream(), BUFFER))
+            var key: ByteArray? = null
+            if (pin != null) {
+                LanHandshake.withHandshakeTimeout(socket) {
+                    key = LanHandshake.client(input, output, pin)
+                }
+                if (key == null) Log.w(TAG, "Хост без шифрования — соединение открытое")
             }
+            LanChannel(
+                socket = socket,
+                input = input,
+                output = output,
+                sessionKey = key,
+                direction = LanCrypto.DIR_CLIENT,
+                peerDirection = LanCrypto.DIR_HOST,
+                prefetched = null,
+                initialOutCounter = 0
+            )
+        } catch (e: Exception) {
+            runCatching { socket.close() }
+            throw e
         }
+    }
+
+    private const val TAG = "LumenLanClient"
+    private const val BUFFER = 64 * 1024
 }

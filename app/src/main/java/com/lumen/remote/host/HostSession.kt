@@ -54,6 +54,9 @@ object HostSession {
         val viewerName: String? = null,
         val viewerPlatform: String? = null,
         val viewOnly: Boolean = false,
+
+        /** Соединение шифруется (LAN-рукопожатие или wss). */
+        val secure: Boolean = false,
         val framesSent: Long = 0,
         val fps: Int = 0,
         val lastFrameAt: Long = 0,
@@ -281,6 +284,9 @@ object HostSession {
         }
         val server = LanServer(
             port = NetUtils.DEFAULT_PORT,
+            // Шифрование включаем только в режиме PIN: иначе зрителю нечего
+            // предъявить для подтверждения.
+            pinProvider = if (p.requirePin) ({ _state.value.pin }) else null,
             onChannel = { bindChannel(it) },
             onError = { message ->
                 if (!stopping) fail(message)
@@ -484,11 +490,13 @@ object HostSession {
 
     /** Подтверждение получено — сеанс становится активным. */
     private fun markConnected(hello: Proto.Hello) {
+        val secure = channel?.isSecure == true
         _state.update {
             it.copy(
                 phase = Phase.CONNECTED,
                 viewerName = hello.name,
                 viewerPlatform = hello.platform,
+                secure = secure,
                 lastError = null
             )
         }

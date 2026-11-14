@@ -225,7 +225,8 @@ class ViewerActivity : AppCompatActivity() {
             val newChannel = try {
                 withContext(Dispatchers.IO) {
                     if (mode == Prefs.MODE_LAN) {
-                        LanClient.connect(address, NetUtils.DEFAULT_PORT)
+                        // PIN нужен для защищённого рукопожатия LAN-канала.
+                        LanClient.connect(address, NetUtils.DEFAULT_PORT, pin = pin)
                     } else {
                         RelayChannel.connect(
                             url = prefs.relayUrl,

@@ -31,6 +31,9 @@ interface PeerChannel {
 
     val isOpen: Boolean
 
+    /** Канал шифруется (LAN-рукопожатие или wss). */
+    val isSecure: Boolean get() = false
+
     /** Адрес партнёра для журнала и троттлинга попыток (LAN/IP, relay/код). */
     val remoteAddress: String? get() = null
 

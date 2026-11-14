@@ -21,11 +21,15 @@ import java.util.concurrent.TimeUnit
  */
 class RelayChannel private constructor(
     client: OkHttpClient,
-    url: String,
+    private val url: String,
     private val role: String,
     private val code: String,
     private val pin: String
 ) : BasePeerChannel() {
+
+    /** Relay по TLS — канал шифруется на транспорте. */
+    override val isSecure: Boolean
+        get() = url.startsWith("wss://", ignoreCase = true)
 
     private val ready = CompletableDeferred<Unit>()
     private val webSocket: WebSocket = client.newWebSocket(

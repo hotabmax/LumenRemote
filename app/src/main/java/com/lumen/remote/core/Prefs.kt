@@ -58,7 +58,8 @@ class Prefs private constructor(context: Context) {
     var myPin: String
         get() {
             val stored = sp.getString(KEY_PIN, null)
-            if (stored != null && stored.length in Ids.MIN_PIN_LENGTH..Ids.MAX_PIN_LENGTH) return stored
+            // Старые 4-значные PIN миграции не подлежат: генерируем 6-значный.
+            if (stored != null && stored.length == Ids.PIN_LENGTH) return stored
             val generated = Ids.newPin()
             sp.edit().putString(KEY_PIN, generated).apply()
             return generated
